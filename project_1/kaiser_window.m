@@ -18,7 +18,20 @@ b = firpm(n2,fo,ao,w);
 fprintf('Parks-McClellan Order %d\n', n2);
 
 [H2,~] = freqz(b,1,1024,fsamp);
+Hmag = abs(H2);
 
+% Passband indices
+pb = f <= 4000;
+
+% Stopband indices
+sb = f >= 4500;
+
+% Actual ripples
+delta_p_actual = max(abs(Hmag(pb) - 1));
+delta_s_actual = max(Hmag(sb));
+
+fprintf('Actual passband ripple = %f\n', delta_p_actual);
+fprintf('Actual stopband ripple = %f\n', delta_s_actual);
 %% Plot Both
 figure
 plot(f,abs(H1),'LineWidth',1.5)

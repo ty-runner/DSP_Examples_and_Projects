@@ -17,7 +17,7 @@ n2 = n2 + rem(n2,2);
 b = firpm(n2,fo,ao,w);
 fprintf('Parks-McClellan Order %d\n', n2);
 
-[H2,f] = freqz(b,1,1024,fsamp);
+[H2,~] = freqz(b,1,1024,fsamp);
 disp(H2);
 Hmag = abs(H2);
 
@@ -33,24 +33,14 @@ delta_s_actual = max(Hmag(sb));
 
 %Add the stopband delta in the frequency domain
 M = n2;
-omega = 2*pi*f/fsamp;
-H2_new = H2 + delta_s_actual .* exp(-1j*(M/2)*omega);
 
-Hmag_new = abs(H2_new);
-
-fprintf('Actual passband ripple (before) = %f\n', delta_p_actual);
-fprintf('Actual stopband ripple (before) = %f\n', delta_s_actual);
-
-delta_p_after = max(abs(Hmag_new(pb) - 1));
-delta_s_after = max(Hmag_new(sb));
-
-fprintf('Actual passband ripple (after)  = %f\n', delta_p_after);
-fprintf('Actual stopband ripple (after)  = %f\n', delta_s_after);
+fprintf('Actual passband ripple = %f\n', delta_p_actual);
+fprintf('Actual stopband ripple = %f\n', delta_s_actual);
 %% Plot Both
 figure
 plot(f,abs(H1),'LineWidth',1.5)
 hold on
-plot(f,abs(H2_new),'LineWidth',1.5)
+plot(f,abs(H2),'LineWidth',1.5)
 grid on
 xlabel('Frequency (Hz)')
 ylabel('Magnitude')

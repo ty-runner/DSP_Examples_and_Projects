@@ -31,11 +31,37 @@ sb = f >= 4500;
 delta_p_actual = max(abs(Hmag(pb) - 1));
 delta_s_actual = max(Hmag(sb));
 
-%Add the stopband delta in the frequency domain
+% Add the stopband delta to h[n] at the center tap (time domain)
 M = n2;
-omega = 2*pi*f/fsamp;
-H2_new = H2 + delta_s_actual .* exp(-1j*(M/2)*omega);
+center = M/2 + 1;
 
+b_new = b;
+b_new(center) = b_new(center) + delta_s_actual;
+%b_new
+tol = 0.006;
+zeros = roots(b_new);
+r = abs(z);
+z_out = z(r > 1 + tol);
+z_in  = z(r < 1 - tol);
+z_uc  = z(abs(r - 1) <= tol);
+
+% Step 4: reflect outside zeros inside
+z_out_ref = 1 ./ conj(z_out);
+disp(abs(zeros));
+disp(z_out_ref);
+disp(size(z_in));
+disp(size(z_uc));
+theta = linspace(0, 2*pi, 500);
+plot(cos(theta), sin(theta), '--')   % unit circle
+hold on
+plot(real(z_in), imag(z_in), 'o')
+plot(real(z_uc), imag(z_uc), '.')
+grid on
+axis equal
+xlabel('Real')
+ylabel('Imag')
+title('Zeros of b\_new in Z-Plane')
+legend('Unit Circle', 'Zeros')
 Hmag_new = abs(H2_new);
 
 fprintf('Actual passband ripple (before) = %f\n', delta_p_actual);

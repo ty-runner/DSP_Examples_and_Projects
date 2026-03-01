@@ -18,7 +18,7 @@ b = firpm(n2,fo,ao,w);
 fprintf('Parks-McClellan Order %d\n', n2);
 
 [H2,f] = freqz(b,1,1024,fsamp);
-disp(H2);
+%disp(H2);
 Hmag = abs(H2);
 
 % Passband indices
@@ -34,23 +34,24 @@ delta_s_actual = max(Hmag(sb));
 % Add the stopband delta to h[n] at the center tap (time domain)
 M = n2;
 center = M/2 + 1;
-
 b_new = b;
 b_new(center) = b_new(center) + delta_s_actual;
-%b_new
+
+% Locate roots outside of the unit circle and reflect them inside with znew
+% = 1/z*
 tol = 0.006;
 zeros = roots(b_new);
 r = abs(z);
-z_out = z(r > 1 + tol);
-z_in  = z(r < 1 - tol);
-z_uc  = z(abs(r - 1) <= tol);
+z(r > 1 + tol) = 1 ./ conj(z(r > 1 + tol));
 
-% Step 4: reflect outside zeros inside
-z_out_ref = 1 ./ conj(z_out);
-disp(abs(zeros));
-disp(z_out_ref);
-disp(size(z_in));
-disp(size(z_uc));
+
+% Recreate the coefficients using the poly function
+b_temp = poly(z);
+
+%gain_correction = sum(b_new) / sum(b_temp);
+%disp(gain_correction);
+%b_temp = real(gain_correction * b_temp);
+[H2_new,f] = freqz(b_temp,1,1024,fsamp);
 theta = linspace(0, 2*pi, 500);
 plot(cos(theta), sin(theta), '--')   % unit circle
 hold on

@@ -37,34 +37,56 @@ center = M/2 + 1;
 b_new = b;
 b_new(center) = b_new(center) + delta_s_actual;
 
-% Locate roots outside of the unit circle and reflect them inside with znew
-% = 1/z*
-tol = 0.006;
-zeros = roots(b_new);
+% Plot original zeros vs modified for min phase
+tol = 1e-8;
+z = roots(b_new);
 r = abs(z);
-z(r > 1 + tol) = 1 ./ conj(z(r > 1 + tol));
+figure;
+plot(real(z), imag(z), 'x', 'LineWidth', 2);
+hold on;
 
+% Plot unit circle
+theta = linspace(0, 2*pi, 500);
+plot(cos(theta), sin(theta), 'r--', 'LineWidth', 1.5);
 
+axis equal;
+grid on;
+xlabel('Real Part');
+ylabel('Imaginary Part');
+title('Roots before min phase transform');
+legend('Roots', 'Unit Circle');
+%z(r > 1 + tol) = 1 ./ conj(z(r > 1 + tol));
+% Remove half of the zeros on the unit circle, Only keep roots inside and on unit circle
+
+z = z(r - 1 < tol);
+disp(z);
+z([12 13]) = []; %we can take out either of the pairs on the UC, TODO - cant be manual
+r = abs(z);
+disp(r);
+figure;
+plot(real(z), imag(z), 'x', 'LineWidth', 2);
+hold on;
+
+% Plot unit circle
+theta = linspace(0, 2*pi, 500);
+plot(cos(theta), sin(theta), 'r--', 'LineWidth', 1.5);
+
+axis equal;
+grid on;
+xlabel('Real Part');
+ylabel('Imaginary Part');
+title('Roots after min phase transform');
+legend('Roots', 'Unit Circle');
 % Recreate the coefficients using the poly function
 b_temp = poly(z);
 
 %gain_correction = sum(b_new) / sum(b_temp);
 %disp(gain_correction);
 %b_temp = real(gain_correction * b_temp);
+disp(sqrt(1 + delta_s_actual));
+b_temp = real(b_temp / (sqrt(1 + delta_s_actual)));
 [H2_new,f] = freqz(b_temp,1,1024,fsamp);
-theta = linspace(0, 2*pi, 500);
-plot(cos(theta), sin(theta), '--')   % unit circle
-hold on
-plot(real(z_in), imag(z_in), 'o')
-plot(real(z_uc), imag(z_uc), '.')
-grid on
-axis equal
-xlabel('Real')
-ylabel('Imag')
-title('Zeros of b\_new in Z-Plane')
-legend('Unit Circle', 'Zeros')
 Hmag_new = abs(H2_new);
-
 fprintf('Actual passband ripple (before) = %f\n', delta_p_actual);
 fprintf('Actual stopband ripple (before) = %f\n', delta_s_actual);
 

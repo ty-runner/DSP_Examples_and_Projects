@@ -35,6 +35,7 @@ delta_s_actual = max(Hmag(sb));
 M = n2;
 center = M/2 + 1;
 b_new = b;
+disp(b_new)
 b_new(center) = b_new(center) + delta_s_actual;
 
 % Plot original zeros vs modified for min phase
@@ -46,14 +47,17 @@ zplane(b_new, 1);
 % Step 4 and 5: Only keep roots inside and on unit circle, Remove half of the zeros on the unit circle 
 on_uc = z(abs(r - 1) <= tol);
 inside_uc = z(r < 1 - tol);
-n_uc = size(on_uc) / 2; %number to remove
+n_uc = size(on_uc,1) / 2; %number to remove
 z = [on_uc(1:n_uc); inside_uc];
-disp(abs(z));
+
 
 r = abs(z);
 
 % Recreate the coefficients using the poly function
 b_temp = poly(z);
+[Htemp,~] = freqz(b_temp,1,1024,fsamp);
+gain = sqrt(abs(H2(1))) / abs(Htemp(1));
+b_temp = b_temp * gain;
 figure
 zplane(b_temp, 1);
 [H2_new,f] = freqz(b_temp,1,1024,fsamp);

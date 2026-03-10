@@ -35,9 +35,9 @@ delta_s_actual = max(Hmag(sb));
 M = n2;
 center = M/2 + 1;
 b_new = b;
-disp(b_new)
-b_new(center) = b_new(center) + delta_s_actual;
 
+b_new(center) = b_new(center) + delta_s_actual;
+disp(b_new)
 % Plot original zeros vs modified for min phase
 tol = 1e-8;
 z = roots(b_new); %plot with x's
@@ -50,14 +50,12 @@ inside_uc = z(r < 1 - tol);
 n_uc = size(on_uc,1) / 2; %number to remove
 z = [on_uc(1:n_uc); inside_uc];
 
-
-r = abs(z);
+factor = sqrt(b_new(1) / abs(prod(z)));
 
 % Recreate the coefficients using the poly function
 b_temp = poly(z);
-[Htemp,~] = freqz(b_temp,1,1024,fsamp);
-gain = sqrt(abs(H2(1))) / abs(Htemp(1));
-b_temp = b_temp * gain;
+b_temp = b_temp * factor;
+b_temp = b_temp ./ sqrt(1+delta_s_actual); %final step divide by sqrt(1 + stopband ripple)
 figure
 zplane(b_temp, 1);
 [H2_new,f] = freqz(b_temp,1,1024,fsamp);

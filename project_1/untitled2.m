@@ -16,7 +16,7 @@ fprintf('Kaiser Order %d\n', n1);
 n2 = n2 + rem(n2,2);
 b = firpm(n2,fo,ao,w);
 fprintf('Parks-McClellan Order %d\n', n2);
-
+fprintf('Parks-McClellan Order %d\n', size(b));
 [H2,f] = freqz(b,1,1024,fsamp);
 %disp(H2);
 Hmag = abs(H2);
@@ -35,6 +35,7 @@ delta_s_actual = max(Hmag(sb));
 M = n2;
 center = M/2 + 1;
 b_new = b;
+disp(b_new)
 b_new(center) = b_new(center) + delta_s_actual;
 
 % Plot original zeros vs modified for min phase
@@ -44,13 +45,20 @@ r = abs(z);
 figure
 zplane(b_new, 1);
 % Step 4 and 5: Only keep roots inside and on unit circle, Remove half of the zeros on the unit circle 
-z = z(r - 1 < tol);
-disp(z);
-z([12 13]) = []; %we can take out either of the pairs on the UC, TODO - cant be manual
+on_uc = z(abs(r - 1) <= tol);
+inside_uc = z(r < 1 - tol);
+n_uc = size(on_uc,1) / 2; %number to remove
+z = [on_uc(1:n_uc); inside_uc];
+
+
 r = abs(z);
 
 % Recreate the coefficients using the poly function
 b_temp = poly(z);
+[Htemp,~] = freqz(b_temp,1,1024,fsamp);
+gain = sqrt(abs(H2(1))) / abs(Htemp(1));
+disp(gain);
+b_temp = b_temp * gain;
 figure
 zplane(b_temp, 1);
 [H2_new,f] = freqz(b_temp,1,1024,fsamp);
@@ -63,7 +71,7 @@ delta_s_after = max(Hmag_new(sb));
 
 fprintf('Actual passband ripple (after)  = %f\n', delta_p_after);
 fprintf('Actual stopband ripple (after)  = %f\n', delta_s_after);
-fprintf('Actual stopband ripple (after)  = %f\n', delta_s_after);
+fprintf('ORDER (after)  = %f\n', size(b_temp));
 %% Plot Only Kaiser Windowing
 figure
 plot(f,abs(H1),'LineWidth',1.5)

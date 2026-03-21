@@ -18,6 +18,21 @@ w = linspace(0, pi, num_points);   % radians
 
 %% Desired response D(w)
 f = w * fs / (2*pi);  % convert to Hz
+W = zeros(size(w));
+
+for k = 1:length(w)
+    if f(k) <= 4000
+        W(k) = 1;   % passband
+    elseif f(k) >= 5000 && f(k) <= 7000
+        W(k) = 1;   % stopband
+    elseif f(k) >= 7500 && f(k) <= 8500
+        W(k) = 1;   % ramp band
+    elseif f(k) >= 9000
+        W(k) = 1;   % stopband
+    else
+        W(k) = 0;   % transition → ignore
+    end
+end
 
 D = zeros(size(w));
 
@@ -37,51 +52,51 @@ for k = 1:length(w)
     end
 end
 
-%% Weighting (IMPORTANT)
-W = ones(size(w));
-
-% emphasize important regions
-W(f <= 4000) = 10;
-W(f >= 5000 & f <= 7000) = 50;
-W(f >= 7500 & f <= 8500) = 5;
-W(f >= 9000) = 50;
-
-%% Build Q and p
-Q = zeros(M+1, M+1);
-p = zeros(M+1, 1);
-
-dw = pi / num_points;
+% Step 1: Calculate Q, p, d
+c = zeros(M+1, length(w));
 
 for k = 1:length(w)
-    % build c(w)
-    c = cos((0:M)' * w(k));   % column vector
-
-    Q = Q + W(k) * (c * c') * dw;
-    p = p + W(k) * D(k) * c * dw;
-end
-[V, D] = eig(Q);
-
-% Extract eigenvalues
-eigvals = diag(D);
-disp(min(eigvals))
-% Find index of smallest eigenvalue
-[~, idx] = min(eigvals);
-
-% Corresponding eigenvector
-a = V(:, idx);
-%% Solve for a
-a = Q \ p;
-
-%% Recover h(n) from a
-h = zeros(N,1);
-
-h(M+1) = a(1);  % center tap
-
-for n = 1:M
-    h(M+1+n) = a(n+1)/2;
-    h(M+1-n) = a(n+1)/2;
+    for n = 0:M
+        c(n+1, k) = cos(w(k)*n);
+    end
 end
 
+Q = zeros(M+1, M+1);
+p = zeros(M+1,1);
+
+for k = 1:length(w)
+    ck = c(:,k);
+    
+    Q = Q + W(k) * (ck * ck.');
+    p = p + W(k) * D(k) * ck;
+end
+
+Q = Q * (pi/num_points);
+p = p * (pi/num_points);
+d = sum(W .* (D.^2)) * (pi/num_points);
+
+% Construct Qt
+Qt = [Q, p;
+      p.', d];
+% Step 2: Calculate the eigenvalues and eigenvectors
+[V, L] = eig(Qt);
+
+[~, idx] = min(diag(L));
+v = V(:, idx);
+v = v / v(end);   % normalize
+
+a = v(1:end-1);
+
+h = zeros(1, N+1);
+
+% center tap
+h(M+1) = a(1);
+
+% symmetric taps
+for k = 1:M
+    h(M+1+k) = a(k+1)/2;
+    h(M+1-k) = a(k+1)/2;
+end
 %% Frequency response
 [H, f_plot] = freqz(h, 1, 2048, fs);
 

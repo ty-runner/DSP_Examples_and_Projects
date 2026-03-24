@@ -97,22 +97,22 @@ fsb = ws * fs / (2*pi);
 % Ripple (linear)
 dev_pass = (10^(Ap/20)-1)/(10^(Ap/20)+1);
 dev_stop = 10^(-As/20);
-[n2,Wn,beta,ftype] = kaiserord([fp fsb], [1 0], [dev_pass dev_stop], fs);
-if mod(n2,2) ~= 0
-    n2 = n2 + 1;
+[n,Wn,beta,ftype] = kaiserord([fp fsb], [1 0], [dev_pass dev_stop], fs);
+if mod(n,2) ~= 0
+    n2 = n + 1;
 end
-h2 = fir1(n2,Wn,ftype,kaiser(n2+1,beta),'noscale');
+h2 = fir1(n,Wn,ftype,kaiser(n+1,beta),'noscale');
 [H2, w2] = freqz(h2, 1, 2048);
 mag2 = abs(H2);
 mag2_db = 20*log10(max(mag2,1e-10));
 
 E2 = Hd - abs(interp1(w2, mag2, w, 'linear'));
-N2 = n2 + 1;
+
 %% Plots for part (b)
 figure('Name','Part (b): Kaiser Window','NumberTitle','off');
 
 subplot(2,2,1);
-stem(0:n2, h2, 'filled');
+stem(n2, h2, 'filled');
 xlabel('n'); ylabel('h[n]');
 title(['Impulse Response, Kaiser Window, N = ' num2str(N2)]);
 grid on;

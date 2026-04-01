@@ -69,15 +69,19 @@ for k = 1:length(w)
     
     Q = Q + W(k) * (ck * ck.');
     p = p + W(k) * D(k) * ck;
+    %Q = Q + (ck * ck.');
+    %p = p + (D(k) * ck);
 end
 
 Q = Q * (pi/num_points);
 p = p * (pi/num_points);
 d = sum(W .* (D.^2)) * (pi/num_points);
-
+%d = sum((D.^2)) * (pi/num_points);
+disp(Q)
 % Construct Qt
 Qt = [Q, p;
       p.', d];
+disp(Qt)
 % Step 2: Calculate the eigenvalues and eigenvectors
 [V, L] = eig(Qt);
 

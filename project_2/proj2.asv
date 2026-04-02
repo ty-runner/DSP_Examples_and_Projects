@@ -127,61 +127,21 @@ magnitude frequency response of the designed filter. To find the null space of a
 command ”null” in MATLAB.
 %}
 W2 = zeros(size(w));
-D2 = zeros(size(w));
 
 for k = 1:length(w)
     if f(k) <= 4000
-        W2(k) = 1;
-        D2(k) = 1;
-
-    elseif f(k) >= 5000 && f(k) <= 7000
-        W2(k) = 1;
-        D2(k) = 0;
-
-    elseif f(k) >= 7500 && f(k) <= 8500
-        W2(k) = 1;
-        D2(k) = (f(k) - 7500) / (8500 - 7500);
-
-    elseif f(k) >= 9000
-        W2(k) = 1;
-        D2(k) = 0;
-
-    else
+        W2(k) = 1;   % passband
+    elseif f(k) == 4500
         W2(k) = 0;
-        D2(k) = 0;
+    elseif f(k) >= 5000 && f(k) <= 7000
+        W2(k) = 1;   % stopband
+    elseif f(k) >= 7500 && f(k) <= 8500
+        if f(k) == 8000
+            W2
+        W2(k) = 1;   % ramp band
+    elseif f(k) >= 9000
+        W2(k) = 1;   % stopband
+    else
+        W2(k) = 0;   % transition → ignore
     end
 end
-
-% Add notch points at the nearest sampled frequencies
-[~, idx4500] = min(abs(f - 4500));
-[~, idx8000] = min(abs(f - 8000));
-
-D2(idx4500) = 0;
-D2(idx8000) = 0;
-W2(idx4500) = 0;
-W2(idx8000) = 0;
-
-
-
-%PLOT%
-figure;
-
-% Base desired response (same as Step 1)
-f_des = [0 4000 5000 7000 7500 8500 9000 12000];
-d_des = [1 1 0 0 0 1 0 0];
-plot(f_des, d_des, 'r--', 'LineWidth', 2); 
-hold on;
-
-% Show notch frequencies explicitly
-plot(4500, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
-plot(8000, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
-
-% Optional vertical guides
-xline(4500, 'k:', 'LineWidth', 1.2);
-xline(8000, 'k:', 'LineWidth', 1.2);
-
-xlabel('Frequency (Hz)');
-ylabel('Magnitude');
-title('Desired Response with Notches');
-legend('Base desired response', 'Notch locations');
-grid on;

@@ -77,7 +77,7 @@ Q = Q * (pi/num_points);
 p = p * (pi/num_points);
 d = sum(W .* (D.^2)) * (pi/num_points);
 %d = sum((D.^2)) * (pi/num_points);
-disp(Q)
+
 % Construct Qt
 Qt = [Q, p;
       p.', d];
@@ -104,6 +104,14 @@ end
 %% Frequency response
 [H, f_plot] = freqz(h, 1, 2048, fs);
 
+
+%% Interpolate H to match design grid
+H_interp = interp1(f_plot, abs(H), f, 'linear', 'extrap');
+
+%% Compute RMSE (weighted)
+rmse = sqrt( sum(W .* (H_interp - D).^2) / sum(W) );
+
+fprintf('Step 1 RMSE: %.6f\n', rmse);
 %% Plot
 figure;
 plot(f_plot, abs(H), 'b', 'LineWidth', 2); hold on;
@@ -126,62 +134,116 @@ should use the eigenfilter method with linear constraint that was explained in t
 magnitude frequency response of the designed filter. To find the null space of a matrix, you can use the
 command ”null” in MATLAB.
 %}
-W2 = zeros(size(w));
-D2 = zeros(size(w));
+
+% Same desired response / weights as Step 1
+W2 = W;
+D2 = D;
+
+% Recompute Q, p, d for Step 2 (same as Step 1 here)
+Q2 = zeros(M+1, M+1);
+p2 = zeros(M+1, 1);
 
 for k = 1:length(w)
-    if f(k) <= 4000
-        W2(k) = 1;
-        D2(k) = 1;
-
-    elseif f(k) >= 5000 && f(k) <= 7000
-        W2(k) = 1;
-        D2(k) = 0;
-
-    elseif f(k) >= 7500 && f(k) <= 8500
-        W2(k) = 1;
-        D2(k) = (f(k) - 7500) / (8500 - 7500);
-
-    elseif f(k) >= 9000
-        W2(k) = 1;
-        D2(k) = 0;
-
-    else
-        W2(k) = 0;
-        D2(k) = 0;
-    end
+    ck = c(:,k);
+    Q2 = Q2 + W2(k) * (ck * ck.');
+    p2 = p2 + W2(k) * D2(k) * ck;
 end
 
-% Add notch points at the nearest sampled frequencies
-[~, idx4500] = min(abs(f - 4500));
-[~, idx8000] = min(abs(f - 8000));
+Q2 = Q2 * (pi/num_points);
+p2 = p2 * (pi/num_points);
+d2 = sum(W2 .* (D2.^2)) * (pi/num_points);
 
-D2(idx4500) = 0;
-D2(idx8000) = 0;
-W2(idx4500) = 0;
-W2(idx8000) = 0;
+% Augmented matrix Qt for constrained problem
+Qt2 = [Q2, p2;
+       p2.', d2];
 
+%% Build linear constraints E*a = v
+% Notch at 4500 Hz  --> A(w1)=0
+% Notch at 8000 Hz  --> A(w2)=0
 
+w1 = 2*pi*4500/fs;
+w2n = 2*pi*8000/fs;   % use w2n so it doesn't clash with W2
 
-%PLOT%
+c1 = cos((0:M)' * w1);     % c(w1)
+c2n = cos((0:M)' * w2n);   % c(w2)
+
+% Each notch gives one row in E
+E = [c1.';
+     c2n.'];
+
+vcon = [0;
+        0];
+
+% Augmented constraint matrix Ehat = [E  v]
+% because E*a = v  <=>  [E  v] * [a; -1] = 0
+Ehat = [E, vcon];
+
+%% Null-space method
+B = null(Ehat);
+
+% Reduced matrix
+Qt_red = B.' * Qt2 * B;
+
+% Solve reduced eigenproblem
+[Vred, Lred] = eig(Qt_red);
+[~, idx_red] = min(diag(Lred));
+
+w_red = Vred(:, idx_red);
+
+% Recover augmented solution ahat
+ahat = B * w_red;
+
+% Normalize so ahat = [a; -1]
+ahat = ahat / (-ahat(end));
+
+a2 = ahat(1:end-1);
+
+%% Recover symmetric Type-I impulse response
+h2 = zeros(1, N+1);
+
+% center tap
+h2(M+1) = a2(1);
+
+% symmetric taps
+for k = 1:M
+    h2(M+1+k) = a2(k+1)/2;
+    h2(M+1-k) = a2(k+1)/2;
+end
+
+%% Frequency response of constrained filter
+[H2c, f_plot2] = freqz(h2, 1, 2048, fs);
+
+%% Interpolate H2c to design grid
+H2c_interp = interp1(f_plot2, abs(H2c), f, 'linear', 'extrap');
+
+%% Weighted RMSE with respect to base desired response
+rmse2 = sqrt( sum(W2 .* (H2c_interp - D2).^2) / sum(W2) );
+fprintf('Step 2 RMSE (constrained): %.6f\n', rmse2);
+
+%% Check notch values
+H4500 = interp1(f_plot2, abs(H2c), 4500, 'linear', 'extrap');
+H8000 = interp1(f_plot2, abs(H2c), 8000, 'linear', 'extrap');
+
+fprintf('Magnitude at 4500 Hz: %.6e\n', H4500);
+fprintf('Magnitude at 8000 Hz: %.6e\n', H8000);
+
+%% Plot constrained design
 figure;
+plot(f_plot2, abs(H2c), 'b', 'LineWidth', 2); hold on;
 
-% Base desired response (same as Step 1)
-f_des = [0 4000 5000 7000 7500 8500 9000 12000];
-d_des = [1 1 0 0 0 1 0 0];
-plot(f_des, d_des, 'r--', 'LineWidth', 2); 
-hold on;
+% Base desired overlay
+f_des2 = [0 4000 5000 7000 7500 8500 9000 12000];
+d_des2 = [1 1 0 0 0 1 0 0];
+plot(f_des2, d_des2, 'r--', 'LineWidth', 2);
 
-% Show notch frequencies explicitly
+% Mark notch locations
 plot(4500, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
 plot(8000, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
-
-% Optional vertical guides
 xline(4500, 'k:', 'LineWidth', 1.2);
 xline(8000, 'k:', 'LineWidth', 1.2);
 
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
-title('Desired Response with Notches');
-legend('Base desired response', 'Notch locations');
+title('Constrained Eigenfilter Design with Notches');
+legend('Designed Filter', 'Desired', 'Notch Frequencies', 'Location', 'best');
 grid on;

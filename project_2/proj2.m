@@ -13,7 +13,7 @@ N = 50;
 M = N/2;
 
 % Frequency grid (numerical integration)
-num_points = 2000;
+num_points = 2000000;
 w = linspace(0, pi, num_points);   % radians
 
 %% Desired response D(w)
@@ -121,10 +121,18 @@ f_des = [0 4000 5000 7000 7500 8500 9000 12000];
 d_des = [1 1 0 0 0 1 0 0];
 plot(f_des, d_des, 'r--', 'LineWidth', 2);
 
+% Transition-band boundaries
+xline(4000, 'k:', 'LineWidth', 1.2);
+xline(5000, 'k:', 'LineWidth', 1.2);
+xline(7000, 'k:', 'LineWidth', 1.2);
+xline(7500, 'k:', 'LineWidth', 1.2);
+xline(8500, 'k:', 'LineWidth', 1.2);
+xline(9000, 'k:', 'LineWidth', 1.2);
+
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 title('Eigenfilter Design (From Slides)');
-legend('Designed Filter', 'Desired');
+legend('Designed Filter', 'Desired', 'Transition Boundaries', 'Location', 'best');
 grid on;
 %{ 
 Step 2, eigenfilter with a notch added
@@ -236,14 +244,20 @@ f_des2 = [0 4000 5000 7000 7500 8500 9000 12000];
 d_des2 = [1 1 0 0 0 1 0 0];
 plot(f_des2, d_des2, 'r--', 'LineWidth', 2);
 
-% Mark notch locations
+% Notch locations
 plot(4500, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
 plot(8000, 0, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
-xline(4500, 'k:', 'LineWidth', 1.2);
-xline(8000, 'k:', 'LineWidth', 1.2);
+
+% Transition-band boundaries
+xline(4000, 'k:', 'LineWidth', 1.2);
+xline(5000, 'k:', 'LineWidth', 1.2);
+xline(7000, 'k:', 'LineWidth', 1.2);
+xline(7500, 'k:', 'LineWidth', 1.2);
+xline(8500, 'k:', 'LineWidth', 1.2);
+xline(9000, 'k:', 'LineWidth', 1.2);
 
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
 title('Constrained Eigenfilter Design with Notches');
-legend('Designed Filter', 'Desired', 'Notch Frequencies', 'Location', 'best');
+legend('Designed Filter', 'Desired', 'Notch Frequencies', 'Transition Boundaries', 'Location', 'best');
 grid on;

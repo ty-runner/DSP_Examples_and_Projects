@@ -28,14 +28,31 @@
 fs = 29927;
 
 N = 5000;
-D = 7; %bits
+D = 12; %bits
 n = 0:N-1;
 t = n / fs;
 
+%% Step 1
 x = 0.25*sin(3221*t) + 0.25*cos(8169*t);
 xq = round(x * 2^D) / 2^D;
 e = x - xq;
 
+step_1_result = var(e);
+
+Delta = 1 / (2^D);
+theoretical_power = (Delta^2) / 12;
+
+signal_power = var(x);
+SNR_measured_dB = 10*log10(signal_power / step_1_result);
+SNR_theoretical_dB = 10*log10(signal_power / theoretical_power);
+
+fprintf('Calculated error power (var): %.10f\n', step_1_result);
+fprintf('Theoretical error power:      %.10f\n', theoretical_power);
+fprintf('Measured SNR:                 %.10f dB\n', SNR_measured_dB);
+fprintf('Theoretical SNR:              %.10f dB\n', SNR_theoretical_dB);
+fprintf('Difference:                  %.10f\n', abs(step_1_result - theoretical_power));
+
+figure;
 plot(t, x, 'b'); hold on;
 plot(t, xq, 'r--');
 plot(t, e, 'k');
@@ -45,4 +62,21 @@ title('Signal, Quantized Signal, and Error');
 legend('x (original)', 'x_q (quantized)', 'e (error)');
 grid on;
 
-%round(x*2^D)/(2^D);
+%% Step 2
+[Re, lags] = xcorr(e, 'biased');  % already divides by N
+% OR: [Re, lags] = xcorr(e); Re = Re / N;
+
+figure;
+stem(lags, Re, 'filled');  % better for impulse-like signals
+xlabel('Lag');
+ylabel('Autocorrelation');
+title('Autocorrelation of Quantization Error');
+grid on;
+
+fprintf('Autocorr at lag 0: %.10f\n', Re(lags == 0));
+fprintf('Variance of error: %.10f\n', var(e));
+
+%% Step 3
+figure;
+histogram(e);
+grid on;

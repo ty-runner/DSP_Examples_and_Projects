@@ -74,14 +74,13 @@ d = sum(W .* (D.^2)) * (pi/num_points);
 % Construct Qt
 Qt = [Q, p;
       p.', d];
-
+disp(Qt)
 % Step 2: Calculate the eigenvalues and eigenvectors
 [V, L] = eig(Qt);
 
 [~, idx] = min(diag(L));
 v = V(:, idx);
-
-v = v / -v(end);   % normalize
+v = v / v(end);   % normalize
 
 a = v(1:end-1);
 
@@ -172,6 +171,7 @@ vcon = [0;
         0];
 
 % Augmented constraint matrix Ehat = [E  v]
+% because E*a = v  <=>  [E  v] * [a; -1] = 0
 Ehat = [E, vcon];
 
 %% Null-space method

@@ -1,0 +1,94 @@
+%Sample at Hz and generate a discrete-time signal with
+%N=5000 samples in MATLAB (The frequencies, including the sampling frequency, are chosen to make the
+%sampling process as arbitrarily as possible). Then quantize the signal by rounding the samples to D=7 bits.
+%The rounding can be done by this command in MATLAB: round(x*2^D)/2^D. Find the error between
+%the original sampled signal and its quantized version. This error would be quantization error (noise).
+fs = 29927;
+N = 5000;
+n = 0:N-1;
+t = n/fs;
+
+a = 0.6;
+D = 8;
+
+x = 0.1*sin(2*pi*785*t) + 0.1*sin(2*pi*1031*t);
+
+x_inf = max(abs(x));
+K = (1 - abs(a)) / x_inf;
+
+fprintf('||x||_inf = %.10f\n', x_inf);
+fprintf('K = %.10f\n', K);
+
+% Quantizer
+Q = @(v) round(v * 2^D) / 2^D;
+
+% Quantized input signal
+xq = Q(x);
+
+% Quantized filter output
+yq = zeros(1, N);
+
+for i = 2:N
+    mult_in = Q(K * xq(i));        % quantized multiplier output for input branch
+    mult_fb = Q(a * yq(i-1));      % quantized multiplier output for feedback branch
+    yq(i) = Q(mult_in + mult_fb);  % quantized adder output
+end
+
+figure;
+plot(t, yq, 'b');
+xlabel('Time (s)');
+ylabel('Amplitude');
+title('Quantized Output of First-Order Digital Filter');
+grid on;
+
+%% Step 4
+y_ideal = zeros(1, N);
+
+for i = 2:N
+    y_ideal(i) = K*x(i) + a*y_ideal(i-1);
+end
+
+figure;
+plot(t, y_ideal, 'k--'); hold on;
+plot(t, yq, 'b');
+xlabel('Time (s)');
+ylabel('Amplitude');
+title('Ideal vs Quantized Filter Output');
+legend('Ideal output', 'Quantized output');
+grid on;
+
+e_out = y_ideal - yq;
+
+figure;
+plot(t, e_out, 'r');
+xlabel('Time (s)');
+ylabel('Error');
+title('Quantization Error at Filter Output');
+grid on;
+
+%% Step 5
+% Noise power at output
+noise_power = var(e_out);
+
+% Ideal output signal power
+signal_power = var(y_ideal);
+
+% Quantization SNR
+SNR_dB = 10 * log10(signal_power / noise_power);
+
+fprintf('Ideal output power: %.10f\n', signal_power);
+fprintf('Output noise power: %.10f\n', noise_power);
+fprintf('Quantization SNR:   %.10f dB\n', SNR_dB);
+
+% TODO Step 6
+
+% Step 7
+spec_y = fft(y_ideal)/N;   % normalize
+f = (0:N-1)*(fs/N);
+
+figure;
+plot(f(1:N/2), abs(spec_y(1:N/2)));
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+title('Magnitude Spectrum of Output Signal');
+grid on;

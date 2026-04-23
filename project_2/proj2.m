@@ -261,3 +261,62 @@ ylabel('Magnitude');
 title('Constrained Eigenfilter Design with Notches');
 legend('Designed Filter', 'Desired', 'Notch Frequencies', 'Location', 'best');
 grid on;
+
+%% Zeros of Step 1 filter
+z1 = roots(h);     % zeros of H(z)
+disp('Zeros of Step 1 filter:');
+disp(size(z1));
+
+figure;
+zplane(h,1);
+title('Zeros of Step 1 Filter');
+
+%% Zeros of Step 2 filter
+z2 = roots(h2);    % zeros of H2(z)
+disp('Zeros of Step 2 filter:');
+disp(size(z2));
+
+figure;
+zplane(h2,1);
+title('Zeros of Step 2 Filter');
+
+[H1, f1] = freqz(h, 1, 2048, fs);
+[H2, f2] = freqz(h2, 1, 2048, fs);
+
+phi1 = unwrap(angle(H1));
+phi2 = unwrap(angle(H2));
+
+figure;
+plot(f1, phi1, 'LineWidth', 1.5); hold on;
+plot(f2, phi2, '--', 'LineWidth', 1.5);
+xlabel('Frequency (Hz)');
+ylabel('Phase (radians)');
+title('Phase Response');
+legend('Step 1', 'Step 2');
+grid on;
+[H, w] = freqz(h, 1, 2048);
+
+phi = unwrap(angle(H));
+
+% numerical derivative
+dphi = diff(phi);
+dw = diff(w);
+
+tau = -dphi ./ dw;
+
+figure;
+plot(w(1:end-1), tau);
+xlabel('\omega (rad/sample)');
+ylabel('Group Delay');
+title('Group Delay from Phase');
+grid on;
+
+[H, w] = freqz(h, 1, 2048);   % w is in rad/sample
+phi = unwrap(angle(H));
+
+figure;
+plot(w, phi);
+xlabel('\omega (rad/sample)');
+ylabel('Phase (rad)');
+title('Phase vs \omega');
+grid on;
